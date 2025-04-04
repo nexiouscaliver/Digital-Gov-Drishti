@@ -5,7 +5,8 @@ from pymongo.server_api import ServerApi  # Added import
 from gridfs import GridFS
 import json  # Added import for json
 
-DB_NAME = "berkeley_offshore"  # Updated database name
+# Update DB_NAME for the grievance system
+DB_NAME = "grievance_system"  # Changed to appropriate name for this application
 
 
 def get_mongodb_client():
@@ -58,7 +59,7 @@ def get_mongodb_client():
 
 def get_collection(collection_name):
     """
-    Get a collection from the 'berkeley_offshore' database.
+    Get a collection from the database.
     """
     db = get_mongodb_client()[DB_NAME]
     return db[collection_name]
@@ -78,13 +79,35 @@ def upsert_document(collection_name, data):
 
 
 def insert_document(collection_name, data):
-    collection = get_collection(collection_name)
-    collection.insert_one(data)
+    try:
+        collection = get_collection(collection_name)
+        result = collection.insert_one(data)
+        logging.info(f"Successfully inserted document with ID: {result.inserted_id}")
+        return result.inserted_id
+    except Exception as e:
+        logging.error(f"Error inserting document into {collection_name}: {str(e)}")
+        return None
 
 
 def get_document(collection_name, document_id):
     collection = get_collection(collection_name)
     return collection.find_one({"_id": document_id})
+
+
+def get_document_by_field(collection_name, field_name, field_value):
+    """
+    Get a document from the specified collection by any field.
+    
+    Args:
+        collection_name (str): The name of the collection
+        field_name (str): The name of the field to query by
+        field_value: The value to match
+        
+    Returns:
+        dict or None: The matching document, or None if not found
+    """
+    collection = get_collection(collection_name)
+    return collection.find_one({field_name: field_value})
 
 
 def get_document_json(collection_name, document_id):
@@ -120,3 +143,24 @@ def check_document_exists_by_field(collection_name, field_name, field_value):
 def get_collection_documents(collection_name):
     collection = get_collection(collection_name)
     return collection.find({})
+
+
+def update_document(collection_name, query, update_data):
+    """
+    Update a document in the specified collection.
+    
+    Args:
+        collection_name (str): The name of the collection
+        query (dict): The query to find the document to update
+        update_data (dict): The update operations to apply
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        collection = get_collection(collection_name)
+        result = collection.update_one(query, update_data)
+        return result.modified_count > 0
+    except Exception as e:
+        logging.error(f"Error updating document: {str(e)}")
+        return False
