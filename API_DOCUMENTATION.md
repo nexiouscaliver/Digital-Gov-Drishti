@@ -511,6 +511,164 @@ Retrieves all generated complaint blogs with pagination.
 
 ---
 
+## 13. Discussions Endpoints
+
+This section covers the endpoints used to handle discussion comments for complaints.
+
+### 13.1 Add Discussion Comment
+
+**Endpoint:** `/api/complaints/{complaint_id}/discussion`  
+**Method:** `POST`
+
+**Description:** Adds a discussion comment to a specific complaint. The comment is processed through an AI-powered abuse detection system. If abusive content is detected, the user will be blocked from posting further comments.
+
+**Request Parameters (JSON):**
+- `phone` (string): The user's phone number.
+- `comment` (string): The discussion comment.
+- `anonymous` (boolean, optional): When true, the comment is posted anonymously.
+
+**Sample Request Payload:**
+```json
+{
+  "phone": "1234567890",
+  "comment": "I am following this complaint for updates.",
+  "anonymous": false
+}
+```
+
+**Sample Success Response:**
+```json
+{
+  "message": "Discussion comment added successfully",
+  "discussion_id": "550e8400-e29b-41d4-a716-446655440000",
+  "success": true
+}
+```
+
+**Sample Error Response (Abusive Content):**
+```json
+{
+  "message": "Your comment has been flagged as inappropriate and has been rejected. Your account has been blocked due to violation of community guidelines.",
+  "blocked": true,
+  "detection_result": {
+    "is_abusive": true,
+    "explanation": "Comment contains offensive language targeting individuals"
+  },
+  "success": false
+}
+```
+
+**Sample Error Response (Already Blocked):**
+```json
+{
+  "message": "Your account has been blocked from posting comments due to violation of community guidelines",
+  "blocked": true,
+  "success": false
+}
+```
+
+**Notes:**
+- This endpoint is rate limited to 5 requests per minute per user (based on the phone number).
+- Ensure that the complaint with the specified `complaint_id` exists before adding a discussion comment.
+- Comments are screened for abusive language using AI technology. Users who post abusive content will be blocked.
+
+### 13.2 Get Complaint Discussions
+
+**Endpoint:** `/api/complaints/{complaint_id}/discussion`  
+**Method:** `GET`
+
+**Description:** Retrieves discussion comments for a specific complaint with pagination.
+
+**Query Parameters:**
+- `page` (integer, optional): Page number (default is `1`).
+- `limit` (integer, optional): Number of comments per page (default is `10`).
+
+**Sample Response:**
+```json
+{
+  "discussions": [
+    {
+      "discussion_id": "550e8400-e29b-41d4-a716-446655440000",
+      "complaint_id": "uuid123456",
+      "phone": "1234567890",
+      "user_name": "Test User",
+      "comment": "I am following this complaint for updates.",
+      "comment_datetime": "2023-04-04T10:15:30",
+      "anonymous": false
+    }
+  ],
+  "count": 1,
+  "total": 11,
+  "page": 1,
+  "limit": 10,
+  "success": true
+}
+```
+
+**Notes:**
+- The endpoint supports pagination and sorts comments by newest first.
+- MongoDB-specific internal fields (like `_id`) are removed from the response.
+
+### 13.3 Delete Discussion Comment
+
+**Endpoint:** `/api/complaints/discussion/{discussion_id}`  
+**Method:** `DELETE`
+
+**Description:** Deletes a specific discussion comment.
+
+**Query Parameters:**
+- `phone` (string, required): The phone number of the user making the deletion request (used for authorization).
+
+**Sample Response:**
+```json
+{
+  "message": "Discussion comment deleted successfully",
+  "success": true
+}
+```
+
+**Authorization:**
+- Only the user who created the comment or the owner of the complaint is authorized to delete the comment.
+
+### 13.4 Check User Block Status
+
+**Endpoint:** `/api/complaints/discussion/blocked/{phone}`  
+**Method:** `GET`
+
+**Description:** Checks if a user is blocked from posting discussion comments.
+
+**URL Parameters:**
+- `phone` (string): The phone number of the user to check.
+
+**Sample Response (User Blocked):**
+```json
+{
+  "blocked": true,
+  "block_details": {
+    "phone": "1234567890",
+    "first_blocked_at": "2023-04-05T12:34:56",
+    "last_blocked_at": "2023-04-07T09:12:34",
+    "violation_count": 3,
+    "user_name": "Test User"
+  },
+  "success": true
+}
+```
+
+**Sample Response (User Not Blocked):**
+```json
+{
+  "blocked": false,
+  "success": true
+}
+```
+
+**Notes:**
+- This endpoint is useful for checking if a user is allowed to post comments before showing the comment input field in the UI.
+- Block details include information about when the user was first blocked, last blocked, and the violation count.
+
+---
+
 ## References
 
 - [Documenting API Endpoints](https://idratherbewriting.com/learnapidoc/docendpoints.html)

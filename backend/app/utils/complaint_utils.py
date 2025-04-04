@@ -415,4 +415,112 @@ def severity_value_fallback(severity_value):
         return severity_value
     if isinstance(severity_value, dict):
         return severity_value.get('level', 'medium')
-    return "medium" 
+    return "medium"
+
+def detect_abusive_content(comment_text):
+    """
+    Uses Gemini API to detect abusive language in discussion comments.
+    
+    Args:
+        comment_text (str): The discussion comment text to analyze
+        
+    Returns:
+        dict: Contains detection result (boolean) and confidence score (float)
+    """
+    try:
+        if not GEMINI_API_KEY:
+            logger.warning("No GEMINI_API_KEY found. Using keyword-based abuse detection.")
+            # Fallback to simple keyword-based detection
+            abusive_keywords = [
+                "idiot", "stupid", "fool", "jerk", "moron", "pathetic", 
+                "incompetent", "corrupt", "useless", "worthless", "dumb", 
+                "retard", "ass", "bitch", "damn", "shit", "fuck", "bastard",
+                "crap", "loser", "scum", "trash", "garbage", "waste"
+            ]
+            
+            comment_lower = comment_text.lower()
+            found_keywords = [word for word in abusive_keywords if word in comment_lower]
+            
+            if found_keywords:
+                logger.info(f"Detected abusive keywords in comment: {found_keywords}")
+                return {
+                    "is_abusive": True,
+                    "confidence": 0.9,
+                    "detected_keywords": found_keywords
+                }
+            return {
+                "is_abusive": False,
+                "confidence": 0.1
+            }
+        
+        # Initialize the Gemini model
+        model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+        
+        # Craft a prompt with clear instructions and context
+        system_prompt = """
+        You are an AI content moderator for a government complaint portal. Your task is to analyze discussion comments 
+        and detect any abusive or inappropriate language. Abusive language includes insults, hate speech, threats, 
+        profanity, or any content that violates community guidelines.
+
+        Respond with only a JSON object containing these fields:
+        1. "is_abusive": (boolean) True if the content is abusive, False otherwise
+        2. "confidence": (float between 0 and 1) Your confidence in this assessment
+        3. "explanation": (string) A very brief explanation of why the content is flagged or not
+        
+        Format your response in the below format as valid JSON. For example:
+        {"is_abusive": , "confidence": 0.95, "explanation": "The comment is respectful and contains no abusive language."}
+        """
+        user_prompt = f"""
+        Analyze the following comment for abusive content:
+        "{comment_text}"
+        """
+        prompt = system_prompt + user_prompt
+        # Generate response from Gemini
+        response = model.generate_content(prompt)
+        content = response.text.strip()
+        
+        try:
+            # Parse the JSON response
+            result = json.loads(content)
+            
+            # Validate required fields
+            if "is_abusive" not in result or "confidence" not in result:
+                logger.warning(f"Invalid AI response format for abuse detection: {content}")
+                return {
+                    "is_abusive": False,
+                    "confidence": 0.0,
+                    "explanation": "Error processing comment"
+                }
+            
+            # Log the result
+            if result["is_abusive"]:
+                logger.warning(f"AI detected abusive content: {result}")
+            
+            return result
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI response as JSON: {content}")
+            logger.error(str(e))
+            
+            # Try to extract meaningful information if possible
+            if "true" in content.lower():
+                return {
+                    "is_abusive": True,
+                    "confidence": 0.7,
+                    "explanation": "Potential abusive content detected (parsing error)"
+                }
+            return {
+                "is_abusive": False,
+                "confidence": 0.5,
+                "explanation": "Unable to parse AI response"
+            }
+    
+    except Exception as e:
+        logger.error(f"Error in abusive content detection: {str(e)}")
+        logger.error(traceback.format_exc())
+        # Default to non-abusive on error
+        return {
+            "is_abusive": False,
+            "confidence": 0.0,
+            "explanation": f"Error: {str(e)}"
+        } 
