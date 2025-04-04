@@ -1,10 +1,13 @@
 "use client";
-import CrimePost from '@/components/user/feed/CrimePost';
-import ProofIndicator from '@/components/user/feed/ProofIndicator';
 import { useState } from 'react';
-import { FaHeart, FaThumbsDown, FaShare, FaComments } from 'react-icons/fa';
+import { FaHeart, FaThumbsDown, FaShare, FaComments, FaPlus } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import Sparkles from '@/components/user/feed/Sparkles';
+import { CardHoverEffect, HoverCard } from '@/components/user/feed/CardHoverEffect';
+import FloatingActionButton from '@/components/user/feed/FloatingActionButton';
 
 export default function MyFeedPage() {
   const [crimePosts, setCrimePosts] = useState([
@@ -144,103 +147,145 @@ export default function MyFeedPage() {
     router.push(`/collaborate/${id}`);
   };
 
+  const handleNewPost = () => {
+    console.log('Creating new post');
+    // Implementation for new post functionality would go here
+  };
+
   return (
-    <div style={{
-      backgroundColor: '#1E1E1E',
-      padding: '20px',
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      color: '#F0F0F0',
-    }}>
-      <h1 style={{
-        color: 'teal',
-        textAlign: 'center',
-        marginBottom: '20px',
-        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
-      }}>My Feed</h1>
-      <div style={{
-        width: '80%',
-        maxWidth: '800px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '20px',
-      }}>
-        {crimePosts.map((post) => (
-          <div key={post.id} style={{
-            border: '1px solid #333',
-            borderRadius: '12px',
-            backgroundColor: '#2C2C2C',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-            padding: '15px',
-            transition: 'transform 0.2s ease-in-out',
-          }}>
-            {post.imageUrl && (
-              <Image
-                src={post.imageUrl}
-                alt={post.summary}
-                width={300}
-                height={200}
-                style={{ width: '100%', height: 'auto', objectFit: 'cover', borderRadius: '8px 8px 0 0' }}
-              />
-            )}
-            <CrimePost summary={post.summary} />
-            <ProofIndicator hasProof={post.hasProof} />
-            <div style={{
-              marginTop: '10px',
-              display: 'flex',
-              justifyContent: 'space-around',
-              alignItems: 'center',
-            }}>
-              <button style={{ ...actionButtonStyle, backgroundColor: post.likes > 100 ? 'lightgreen' : 'teal' }} onClick={() => handleLike(post.id)}>
-                <FaHeart style={{ marginRight: '5px' }} />
-                {post.likes}
-              </button>
-              <button style={{ ...actionButtonStyle, backgroundColor: post.dislikes > 10 ? 'orange' : 'teal' }} onClick={() => handleDislike(post.id)}>
-                <FaThumbsDown style={{ marginRight: '5px' }} />
-                {post.dislikes}
-              </button>
-              <button style={actionButtonStyle}><FaShare style={{ marginRight: '5px' }} /> {post.shares}</button>
-              <button style={actionButtonStyle} onClick={() => handleCollaborateClick(post.id)}>
-                <FaComments style={{ marginRight: '5px' }} /> {post.comments} Collaborate
-              </button>
-              {post.originalComplaintUrl && (
-                <button style={actionButtonStyle}>
-                  <a href={post.originalComplaintUrl} style={{ color: '#F0F0F0', textDecoration: 'none' }}>Read More</a>
-                </button>
-              )}
-            </div>
-            <div style={{
-              marginTop: '10px',
-              fontSize: '0.8em',
-              color: '#888',
-              display: 'flex',
-              justifyContent: 'space-between',
-            }}>
-              <span>{post.timestamp}</span>
-              <span>{post.location}</span>
-              {post.witnesses > 0 && <span>Witnesses: {post.witnesses}</span>}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="min-h-screen bg-zinc-950 text-white p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-7xl mx-auto"
+      >
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+            My Feed
+          </h1>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition-all cursor-pointer"
+          >
+            Filter Posts
+          </motion.div>
+        </div>
+
+        <CardHoverEffect>
+          {crimePosts.map((post) => (
+            <HoverCard key={post.id}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                {post.imageUrl && (
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={post.imageUrl}
+                      alt={post.summary}
+                      fill
+                      style={{ objectFit: 'cover' }}
+                      className="transition-transform duration-500 ease-in-out hover:scale-110"
+                    />
+                    <div className="absolute bottom-0 right-0 p-2">
+                      <span className={`px-3 py-1 rounded-full text-xs ${
+                        post.hasProof 
+                          ? 'bg-green-900/80 text-green-200' 
+                          : 'bg-red-900/80 text-red-200'
+                      }`}>
+                        {post.hasProof ? 'Proof Available' : 'No Proof'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="p-5">
+                  <p className="text-lg font-medium mb-3 text-gray-100 line-clamp-2">{post.summary}</p>
+                  
+                  <div className="flex justify-between items-center text-xs text-gray-400 mb-4">
+                    <span>{post.timestamp}</span>
+                    <span>{post.location}</span>
+                    {post.witnesses > 0 && (
+                      <span className="bg-zinc-800 px-2 py-1 rounded">
+                        {post.witnesses} {post.witnesses === 1 ? 'Witness' : 'Witnesses'}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-2 mt-4">
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleLike(post.id)}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2 rounded transition-colors",
+                        post.likes > 100 
+                          ? "bg-green-900/30 text-green-400" 
+                          : "bg-zinc-800 text-gray-300 hover:bg-zinc-700"
+                      )}
+                    >
+                      <FaHeart className="mb-1" />
+                      <span className="text-xs">{post.likes}</span>
+                    </motion.button>
+                    
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleDislike(post.id)}
+                      className={cn(
+                        "flex flex-col items-center justify-center p-2 rounded transition-colors",
+                        post.dislikes > 10 
+                          ? "bg-orange-900/30 text-orange-400" 
+                          : "bg-zinc-800 text-gray-300 hover:bg-zinc-700"
+                      )}
+                    >
+                      <FaThumbsDown className="mb-1" />
+                      <span className="text-xs">{post.dislikes}</span>
+                    </motion.button>
+                    
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center justify-center p-2 rounded bg-zinc-800 text-gray-300 hover:bg-zinc-700 transition-colors"
+                    >
+                      <FaShare className="mb-1" />
+                      <span className="text-xs">{post.shares}</span>
+                    </motion.button>
+                    
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleCollaborateClick(post.id)}
+                      className="flex flex-col items-center justify-center p-2 rounded bg-purple-900/50 text-purple-300 hover:bg-purple-800/60 transition-colors"
+                    >
+                      <FaComments className="mb-1" />
+                      <span className="text-xs">{post.comments}</span>
+                    </motion.button>
+                  </div>
+                  
+                  {post.originalComplaintUrl && (
+                    <motion.a
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      href={post.originalComplaintUrl}
+                      className="mt-4 block w-full text-center bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-md text-white font-medium hover:from-purple-700 hover:to-blue-700 transition-all"
+                    >
+                      View Details
+                    </motion.a>
+                  )}
+                </div>
+              </motion.div>
+            </HoverCard>
+          ))}
+        </CardHoverEffect>
+      </motion.div>
+      <FloatingActionButton onClick={handleNewPost}>
+        <FaPlus size={24} />
+      </FloatingActionButton>
     </div>
   );
 }
-
-const actionButtonStyle = {
-  backgroundColor: 'teal',
-  border: 'none',
-  padding: '8px 12px',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  color: '#F0F0F0',
-  transition: 'background-color 0.2s ease-in-out',
-  '&:hover': {
-    backgroundColor: 'darkcyan',
-  },
-  display: 'flex',
-  alignItems: 'center',
-  gap: '5px',
-};
