@@ -1,27 +1,50 @@
+"use client";
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const Navbar = () => {
   return (
-    <nav style={{ 
-      backgroundColor: 'lightyellow', // Background color for the navbar
-      padding: '30px 30px',
-      display: 'flex',
-      justifyContent: 'flex-end', // Align items to the right
-      alignItems: 'center',
-    }}>
-      <ul style={{ 
-        listStyleType: 'none', 
-        display: 'flex', 
-        gap: '20px', // Spacing between links
-        margin: 0,
-        padding: 0,
-      }}>
-        <li><Link href="/" style={{ textDecoration: 'none', color: 'black' }}>My Feed</Link></li>
-        <li><Link href="/my-complaints" style={{ textDecoration: 'none', color: 'black' }}>My Complaints</Link></li>
-        <li><Link href="/hot-topic" style={{ textDecoration: 'none', color: 'black' }}>Hot Topic</Link></li>
-        <li><Link href="/upskill" style={{ textDecoration: 'none', color: 'black' }}>Upskill</Link></li>
-        {/* Add a logout link if needed */}
-      </ul>
+    <nav className="bg-zinc-900 py-4 px-6 shadow-lg">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+          Digital Gov Drishti
+        </div>
+        
+        <ul className="flex items-center space-x-6">
+          <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link href="/" className="text-gray-300 hover:text-white transition-colors">
+              My Feed
+            </Link>
+          </motion.li>
+          
+          <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link href="/my-complaints" className="text-gray-300 hover:text-white transition-colors">
+              My Complaints
+            </Link>
+          </motion.li>
+          
+          <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link href="/hot-topic" className="text-gray-300 hover:text-white transition-colors">
+              Hot Topic
+            </Link>
+          </motion.li>
+          
+          <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link href="/appeal" className="text-gray-300 hover:text-white transition-colors">
+              Appeal
+            </Link>
+          </motion.li>
+          
+          <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link 
+              href="/auth/login" 
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition-all"
+            >
+              Login
+            </Link>
+          </motion.li>
+        </ul>
+      </div>
     </nav>
   );
 };
