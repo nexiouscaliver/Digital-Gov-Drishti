@@ -79,7 +79,7 @@ def upsert_document(collection_name, data):
 
 def insert_document(collection_name, data):
     collection = get_collection(collection_name)
-    collection.insert_one(data)
+    return collection.insert_one(data)
 
 
 def get_document(collection_name, document_id):
@@ -120,3 +120,81 @@ def check_document_exists_by_field(collection_name, field_name, field_value):
 def get_collection_documents(collection_name):
     collection = get_collection(collection_name)
     return collection.find({})
+
+
+def get_document_by_field(collection_name, field_name, field_value):
+    """
+    Get a document by a specific field value
+    
+    Args:
+        collection_name (str): Name of the collection
+        field_name (str): Name of the field to query
+        field_value: Value to match
+        
+    Returns:
+        dict: The found document or None
+    """
+    collection = get_collection(collection_name)
+    return collection.find_one({field_name: field_value})
+
+
+def update_document(collection_name, query, update_data):
+    """
+    Update a document in a collection
+    
+    Args:
+        collection_name (str): Name of the collection
+        query (dict): Query to find the document
+        update_data (dict): Update operations
+        
+    Returns:
+        UpdateResult: Result of the update operation
+    """
+    collection = get_collection(collection_name)
+    result = collection.update_one(query, update_data)
+    return result
+
+
+def delete_document(collection_name, query):
+    """
+    Delete a document from a collection
+    
+    Args:
+        collection_name (str): Name of the collection
+        query (dict): Query to find the document(s) to delete
+        
+    Returns:
+        DeleteResult: Result of the delete operation
+    """
+    collection = get_collection(collection_name)
+    result = collection.delete_one(query)
+    return result
+
+
+def find_documents(collection_name, query, sort=None, limit=None, skip=None):
+    """
+    Find documents in a collection with sorting and pagination
+    
+    Args:
+        collection_name (str): Name of the collection
+        query (dict): Query to find documents
+        sort (list or tuple, optional): Sorting specification
+        limit (int, optional): Maximum number of documents to return
+        skip (int, optional): Number of documents to skip
+        
+    Returns:
+        cursor: Cursor to the documents
+    """
+    collection = get_collection(collection_name)
+    cursor = collection.find(query)
+    
+    if sort:
+        cursor = cursor.sort(sort)
+    
+    if skip:
+        cursor = cursor.skip(skip)
+        
+    if limit:
+        cursor = cursor.limit(limit)
+        
+    return cursor

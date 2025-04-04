@@ -57,6 +57,10 @@ def create_app(test_config=None):
     from app.routes.auth import auth_bp
     app.register_blueprint(auth_bp)
     
+    # Register complaints blueprint
+    from app.routes.complaints import complaints_bp
+    app.register_blueprint(complaints_bp)
+    
     # Test route
     @app.route('/api/healthcheck')
     def healthcheck():

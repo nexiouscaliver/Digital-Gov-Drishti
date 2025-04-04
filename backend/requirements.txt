@@ -9,3 +9,4 @@ python-dateutil==2.8.2
 pytest==7.4.0
 pytest-flask==1.2.0
 gunicorn==21.2.0
+google-generativeai==0.4.0

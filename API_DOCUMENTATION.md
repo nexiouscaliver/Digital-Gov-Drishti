@@ -191,6 +191,326 @@ Resends the OTP to the user's email address in case the original OTP was not rec
 
 ---
 
+## 6. Register Complaint
+
+**Endpoint:** `/api/complaints/register`  
+**Method:** `POST`
+
+**Description:**  
+Registers a new complaint in the system. Uses AI to automatically classify the complaint to an appropriate department and assign a severity level. Marks complaints as verified if supporting media proof is attached.
+
+**Request Parameters:**  
+- `phone`: (string) Phone number of the user registering the complaint.
+- `title`: (string) Title of the complaint.
+- `description`: (string) Detailed description of the complaint.
+- `location`: (object, optional) Location information.
+- `anonymous`: (boolean, optional) Whether to keep the complaint anonymous.
+- `tags`: (array, optional) Tags for categorizing the complaint.
+- `incident_datetime`: (string, optional) Datetime when the incident occurred.
+- `media`: (object, optional) Media files as evidence.
+
+**Sample Request Payload:**  
+```json
+{
+  "phone": "1234567890",                      
+  "location": "Bandra East, Mumbai",
+  "title": "Garbage not collected for 3 days",
+  "description": "The garbage from our area hasn't been picked up...",
+  "anonymous": true,                           
+  "tags": ["swachh bharat", "local authority"],
+  "incident_datetime": "2025-04-03T10:30:00",  
+  "media": {
+    "images": ["base64string1", "base64string2"],
+    "videos": ["base64videostring"],
+    "documents": ["base64docstring"]
+  }
+}
+```
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "message": "Complaint registered successfully",
+  "complaint_id": "uuid123456",
+  "assigned_department": "Sanitation Department",
+  "severity": {
+    "level": "high",
+    "score": 4
+  },
+  "verified": true
+}
+```
+
+---
+
+## 7. Get Complaint Details
+
+**Endpoint:** `/api/complaints/:complaint_id`  
+**Method:** `GET`
+
+**Description:**  
+Retrieves details for a specific complaint.
+
+**URL Parameters:**  
+- `complaint_id`: (string) ID of the complaint.
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "complaint": {
+    "complaint_id": "uuid123456",
+    "phone": "1234567890",
+    "user_name": "Rajesh Kumar",
+    "title": "Garbage not collected for 3 days",
+    "description": "The garbage from our area...",
+    "location": "Bandra East, Mumbai",
+    "anonymous": true,
+    "complaint_datetime": "2025-04-04T10:00:00",
+    "tags": ["swachh bharat", "local authority"],
+    "media": {
+      "images": ["base64img1", "base64img2"],
+      "videos": ["base64video1"],
+      "documents": ["base64doc1"]
+    },
+    "status": "pending",
+    "assigned_department": "Sanitation Department",
+    "severity": {
+      "level": "high",
+      "score": 4
+    },
+    "verified": true
+  }
+}
+```
+
+---
+
+## 8. Get User Complaints
+
+**Endpoint:** `/api/complaints/user/:phone`  
+**Method:** `GET`
+
+**Description:**  
+Retrieves all complaints filed by a specific user based on their phone number.
+
+**URL Parameters:**  
+- `phone`: (string) Phone number of the user.
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "complaints": [
+    {
+      "complaint_id": "uuid123456",
+      "phone": "1234567890",
+      "title": "Garbage not collected for 3 days",
+      "description": "The garbage from our area...",
+      "location": "Bandra East, Mumbai",
+      "status": "pending",
+      "complaint_datetime": "2025-04-04T10:00:00",
+      "assigned_department": "Sanitation Department",
+      "severity": {
+        "level": "high",
+        "score": 4
+      },
+      "verified": true
+    },
+    {
+      "complaint_id": "uuid789012",
+      "phone": "1234567890",
+      "title": "Street light not working",
+      "description": "The street light at the corner...",
+      "location": "Bandra East, Mumbai",
+      "status": "in-progress",
+      "complaint_datetime": "2025-04-01T15:30:00",
+      "assigned_department": "Electricity Department",
+      "severity": {
+        "level": "low",
+        "score": 2
+      },
+      "verified": false
+    }
+  ],
+  "count": 2
+}
+```
+
+---
+
+## 9. Get Complaints by Severity
+
+**Endpoint:** `/api/complaints/severity/:severity_level`  
+**Method:** `GET`
+
+**Description:**  
+Retrieves all complaints with a specific severity level.
+
+**URL Parameters:**  
+- `severity_level`: (string) Severity level of complaints (critical, high, medium, low, minimal).
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "complaints": [
+    {
+      "complaint_id": "uuid123456",
+      "phone": "1234567890",
+      "title": "Major water pipeline burst flooding area",
+      "description": "A main water pipeline has burst...",
+      "location": "Andheri West, Mumbai",
+      "status": "pending",
+      "complaint_datetime": "2025-04-04T10:00:00",
+      "assigned_department": "Water Department",
+      "severity": {
+        "level": "critical",
+        "score": 5
+      },
+      "verified": true
+    },
+    {
+      "complaint_id": "uuid456789",
+      "phone": "9876543210",
+      "title": "Building collapse threatening residents",
+      "description": "A residential building is showing severe cracks...",
+      "location": "Dadar, Mumbai",
+      "status": "pending",
+      "complaint_datetime": "2025-04-03T17:30:00",
+      "assigned_department": "Housing Department",
+      "severity": {
+        "level": "critical",
+        "score": 5
+      },
+      "verified": true
+    }
+  ],
+  "count": 2
+}
+```
+
+---
+
+## 10. Update Complaint Status
+
+**Endpoint:** `/api/complaints/:complaint_id/status`  
+**Method:** `PUT`
+
+**Description:**  
+Updates the status of a specific complaint.
+
+**URL Parameters:**  
+- `complaint_id`: (string) ID of the complaint.
+
+**Request Parameters:**  
+- `status`: (string) New status for the complaint (pending, in-progress, resolved, rejected).
+
+**Sample Request Payload:**  
+```json
+{
+  "status": "in-progress"
+}
+```
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "message": "Complaint status updated to in-progress",
+  "complaint_id": "uuid123456"
+}
+```
+
+---
+
+## 11. Generate Complaint Blog
+
+**Endpoint:** `/api/complaints/:complaint_id/blog`  
+**Method:** `GET`
+
+**Description:**  
+Generates or retrieves an AI-written blog post about a specific complaint using Gemini AI.
+
+**URL Parameters:**  
+- `complaint_id`: (string) ID of the complaint.
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "blog": {
+    "title": "Garbage Crisis Hits Bandra East",
+    "content": "Residents of Bandra East are facing a growing health concern as garbage collection services have failed for the third consecutive day...",
+    "location": "Bandra East, Mumbai",
+    "department": "Sanitation Department",
+    "severity": "high",
+    "has_proof": true,
+    "verified": true,
+    "status": "pending",
+    "complaint_link": "/complaints/uuid123456",
+    "complaint_id": "uuid123456",
+    "generated_at": "2023-04-04T10:15:30"
+  }
+}
+```
+
+---
+
+## 12. Get All Blogs
+
+**Endpoint:** `/api/complaints/blogs`  
+**Method:** `GET`
+
+**Description:**  
+Retrieves all generated complaint blogs with pagination.
+
+**Query Parameters:**  
+- `page`: (integer, optional) Page number for pagination (default: 1).
+- `limit`: (integer, optional) Number of blogs per page (default: 10).
+
+**Sample Response:**  
+```json
+{
+  "success": true,
+  "blogs": [
+    {
+      "title": "Garbage Crisis Hits Bandra East",
+      "content": "Residents of Bandra East are facing a growing health concern...",
+      "location": "Bandra East, Mumbai",
+      "department": "Sanitation Department",
+      "severity": "high",
+      "has_proof": true,
+      "verified": true,
+      "status": "pending",
+      "complaint_link": "/complaints/uuid123456",
+      "complaint_id": "uuid123456",
+      "generated_at": "2023-04-04T10:15:30"
+    },
+    {
+      "title": "Dangerous Pothole Threatens Commuters",
+      "content": "A massive pothole has appeared on the main road...",
+      "location": "Andheri, Mumbai",
+      "department": "Public Works Department",
+      "severity": "high",
+      "has_proof": true,
+      "verified": true,
+      "status": "pending",
+      "complaint_link": "/complaints/uuid789012",
+      "complaint_id": "uuid789012",
+      "generated_at": "2023-04-03T09:45:00"
+    }
+  ],
+  "count": 2,
+  "total": 42,
+  "page": 1,
+  "limit": 10
+}
+```
+
+---
+
 ## References
 
 - [Documenting API Endpoints](https://idratherbewriting.com/learnapidoc/docendpoints.html)

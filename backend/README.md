@@ -10,6 +10,10 @@ A robust backend API for a corruption complaint system, built with Flask and Mon
 - Enterprise-grade error handling and logging
 - Document storage with GridFS
 - RESTful API design
+- AI-powered complaint classification and severity assessment
+- Automatic department assignment for complaints
+- Complaint verification based on media evidence
+- AI-generated blog post creation for complaints
 
 ## Tech Stack
 
@@ -19,6 +23,7 @@ A robust backend API for a corruption complaint system, built with Flask and Mon
 - **JWT**: Authentication
 - **bcrypt**: Password hashing
 - **SMTP**: Email sending
+- **Google Gemini AI**: AI-powered classification and content generation
 
 ## API Endpoints
 
@@ -28,6 +33,16 @@ A robust backend API for a corruption complaint system, built with Flask and Mon
 - **POST /api/login**: Authenticate a user
 - **POST /api/verify-otp**: Verify an OTP code
 - **POST /api/resend-otp**: Resend OTP code
+
+### Complaints
+
+- **POST /api/complaints/register**: Register a new complaint
+- **GET /api/complaints/:complaint_id**: Get complaint details
+- **GET /api/complaints/user/:user_id**: Get all complaints for a user
+- **GET /api/complaints/severity/:severity_level**: Get complaints by severity level
+- **PUT /api/complaints/:complaint_id/status**: Update complaint status
+- **GET /api/complaints/:complaint_id/blog**: Generate blog from complaint
+- **GET /api/complaints/blogs**: Get all generated blogs
 
 ## Environment Variables
 
@@ -53,6 +68,9 @@ MAIL_USE_TLS=True
 MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-email-password
 MAIL_DEFAULT_SENDER=your-email@gmail.com
+
+# Gemini AI
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ## Setup and Installation
@@ -62,6 +80,7 @@ MAIL_DEFAULT_SENDER=your-email@gmail.com
 - Python 3.9+
 - MongoDB
 - pip
+- Google Gemini API key (for AI features)
 
 ### Installation
 
@@ -105,7 +124,14 @@ backend/
 ├── app/
 │   ├── models/          # Database models
 │   ├── routes/          # API routes
+│   │   ├── auth.py      # Authentication routes
+│   │   ├── complaints/  # Complaint routes
 │   ├── utils/           # Utility functions
+│   │   ├── auth_utils.py      # Authentication utilities
+│   │   ├── complaint_utils.py # Complaint utilities
+│   │   ├── email_utils.py     # Email utilities
+│   │   ├── mongodb_utils.py   # MongoDB utilities
+│   │   └── password_utils.py  # Password utilities
 │   ├── errors/          # Error handlers
 │   ├── __init__.py      # Application factory
 │   ├── config.py        # Configuration
