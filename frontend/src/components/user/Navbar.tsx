@@ -35,14 +35,14 @@ const Navbar = () => {
             </Link>
           </motion.li>
           
-          <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          {/* <motion.li whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link 
               href="/auth/login" 
               className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition-all"
             >
               Login
             </Link>
-          </motion.li>
+          </motion.li> */}
         </ul>
       </div>
     </nav>

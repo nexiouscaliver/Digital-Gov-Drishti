@@ -167,8 +167,8 @@ export default function MyFeedPage() {
     );
   };
 
-  const handleCollaborateClick = (id: number) => {
-    router.push(`/collaborate/${id}`);
+  const handleReportClick = () => {
+    router.push('/user/login'); // Replace with your report page route
   };
 
   const applyFilters = () => {
@@ -208,16 +208,12 @@ export default function MyFeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-7xl mx-auto"
-      >
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
-            My Feed
+    <div className="bg-zinc-950 text-white">
+      {/* Hero Section */}
+      <section className="relative py-24 text-center">
+        <div className="container mx-auto">
+          <h1 className={`text-4xl font-bold mb-4 ${heroAnimation ? 'opacity-100 transition-opacity duration-1000' : 'opacity-0'}`}>
+            DRISHTI: Illuminate Corruption, Empower Transparency.
           </h1>
           <motion.div
             whileHover={{ scale: 1.05 }}
@@ -411,4 +407,6 @@ export default function MyFeedPage() {
       <ChatBotButton />
     </div>
   );
-}
+};
+
+export default HomePage;
