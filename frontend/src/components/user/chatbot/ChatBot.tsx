@@ -3,6 +3,14 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaTimes, FaPaperPlane, FaRobot, FaInfoCircle } from "react-icons/fa";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { useRouter } from "next/navigation";
+
+// Define user information type
+type UserInfo = {
+  viewedPages: string[];
+  lastInteraction: Date;
+  preferredTopics?: string[];
+};
 
 type Message = {
   content: string;
@@ -15,7 +23,33 @@ interface ChatBotProps {
   onClose: () => void;
 }
 
+// Website context information for the chatbot
+const WEBSITE_CONTEXT = `
+You are the Digital Gov Drishti assistant, a helpful chatbot for a government complaint and issue reporting platform.
+Here's some information about the platform:
+
+- Digital Gov Drishti is a platform for citizens to report complaints, issues, and suggestions to government authorities.
+- The platform features: My Feed (view posts from other citizens), Hot Topics (trending issues), Complaints (file and track complaints), and Profile sections.
+- Users can submit complaints about infrastructure, utilities, public services, safety issues, environmental concerns, etc.
+- Complaints go through stages: Submitted → Assigned → Review → Forwarded → Resolved.
+- Users can collaborate on issues, provide witnesses/proof, and track progress.
+
+Navigation guidance:
+- My Feed: Browse and interact with other citizen's reports and complaints
+- Hot Topics: Find trending issues in your area that need attention
+- Submit Complaint: File a new complaint with the authorities
+- Track Complaints: Follow the status of your submitted complaints
+
+When helping users:
+1. Be friendly, professional, and concise
+2. Provide clear navigation guidance when asked about website features
+3. Don't make up features that don't exist on the platform
+4. When in doubt, suggest visiting relevant sections of the website
+5. Maintain the context of the conversation
+`;
+
 const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([
     {
       content: "Hello! I'm your Digital Gov Drishti assistant. How can I help you today?",
@@ -26,7 +60,23 @@ const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeyError, setApiKeyError] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    viewedPages: [],
+    lastInteraction: new Date(),
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Track current page for context
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (!userInfo.viewedPages.includes(currentPath)) {
+      setUserInfo(prev => ({
+        ...prev,
+        viewedPages: [...prev.viewedPages, currentPath],
+        lastInteraction: new Date(),
+      }));
+    }
+  }, [userInfo.viewedPages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -34,6 +84,57 @@ const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Function to get conversation history in a format suitable for the AI
+  const getConversationHistory = () => {
+    // Only include the last 10 messages to avoid token limits
+    const recentMessages = messages.slice(-10);
+    return recentMessages.map(msg => msg.content).join("\n");
+  };
+
+  // Function to extract user preferences from conversation
+  const updateUserPreferences = (userMessage: string) => {
+    // Simple keyword-based preference extraction
+    const topicKeywords = {
+      infrastructure: ["road", "bridge", "construction", "building"],
+      utilities: ["water", "electricity", "power", "gas", "supply"],
+      safety: ["crime", "theft", "accident", "safety", "security"],
+      environment: ["pollution", "waste", "garbage", "tree", "park"],
+    };
+
+    const messageLower = userMessage.toLowerCase();
+    const detectedTopics: string[] = [];
+
+    Object.entries(topicKeywords).forEach(([topic, keywords]) => {
+      if (keywords.some(keyword => messageLower.includes(keyword))) {
+        detectedTopics.push(topic);
+      }
+    });
+
+    if (detectedTopics.length > 0) {
+      setUserInfo(prev => {
+        // Create a combined array of existing and new topics
+        const existingTopics = prev.preferredTopics || [];
+        const combinedTopics = [...existingTopics, ...detectedTopics];
+        
+        // Filter for unique topics without using Set
+        const uniqueTopics = combinedTopics.filter((topic, index) => 
+          combinedTopics.indexOf(topic) === index
+        );
+        
+        return {
+          ...prev,
+          preferredTopics: uniqueTopics,
+          lastInteraction: new Date(),
+        };
+      });
+    }
+  };
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+    onClose();
   };
 
   const handleSendMessage = async () => {
@@ -49,6 +150,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
     setInput("");
     setIsLoading(true);
 
+    // Update user preferences based on message
+    updateUserPreferences(input);
+
     try {
       // Get API key from environment variable
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
@@ -59,16 +163,63 @@ const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
 
       // Initialize the Google Generative AI with the API key
       const genAI = new GoogleGenerativeAI(apiKey);
-      // Get the generative model - using the correct model name for v1beta API
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      
+      // Create generative model with the correct model name
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.0-flash",
+        systemInstruction: {
+          role: "system",
+          parts: [{ text: WEBSITE_CONTEXT }],
+        },
+      });
+      
+      // Prepare chat history and user context
+      const conversationHistory = getConversationHistory();
+      const currentPage = window.location.pathname;
+      const userContext = `
+        User is currently on: ${currentPage}
+        Previously viewed pages: ${userInfo.viewedPages.join(", ")}
+        User interests: ${userInfo.preferredTopics ? userInfo.preferredTopics.join(", ") : "Not yet determined"}
+      `;
+      
+      // Combined prompt with context
+      const contextualPrompt = `
+        [Conversation History]
+        ${conversationHistory}
+        
+        [User Context]
+        ${userContext}
+        
+        [Current User Question]
+        ${input}
+      `;
       
       // Generate content from the model
-      const result = await model.generateContent(input);
+      const result = await model.generateContent(contextualPrompt);
       const response = result.response;
       const text = response.text();
 
+      // Check for navigation commands in response
+      const navigationCommands = {
+        "GO_TO_FEED": "/",
+        "GO_TO_HOT_TOPICS": "/hot-topic",
+        "GO_TO_COMPLAINTS": "/complaints",
+        "GO_TO_PROFILE": "/profile",
+      };
+
+      // Check if the response contains navigation commands
+      let finalText = text;
+      Object.entries(navigationCommands).forEach(([command, path]) => {
+        if (text.includes(command)) {
+          // Remove the command from the displayed text
+          finalText = text.replace(command, "");
+          // Schedule navigation after the message is displayed
+          setTimeout(() => handleNavigation(path), 1500);
+        }
+      });
+
       const botMessage: Message = {
-        content: text,
+        content: finalText.trim(),
         isUser: false,
         timestamp: new Date(),
       };
@@ -106,6 +257,41 @@ const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // Suggested questions based on current page and user context
+  const getSuggestedQuestions = () => {
+    const currentPath = window.location.pathname;
+    
+    if (currentPath === "/") {
+      return [
+        "How do I submit a new complaint?",
+        "What are hot topics?",
+        "How can I collaborate on an issue?",
+      ];
+    } else if (currentPath.includes("hot-topic")) {
+      return [
+        "Why are these topics trending?",
+        "How can I add my input to a hot topic?",
+        "How do topics become 'hot'?",
+      ];
+    } else if (currentPath.includes("complaints")) {
+      return [
+        "How do I track my complaint?",
+        "What are the stages of complaint resolution?",
+        "Can I add more information to my complaint?",
+      ];
+    }
+    
+    return [
+      "What can I do on Digital Gov Drishti?",
+      "How do I navigate the platform?",
+      "What type of issues can I report?",
+    ];
+  };
+
+  const handleSuggestedQuestion = (question: string) => {
+    setInput(question);
   };
 
   return (
@@ -185,6 +371,24 @@ const ChatBot: React.FC<ChatBotProps> = ({ isOpen, onClose }) => {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Suggested Questions */}
+          {messages.length < 3 && (
+            <div className="px-4 py-2 border-t border-zinc-800 bg-zinc-900/80">
+              <p className="text-xs text-gray-400 mb-2">Suggested questions:</p>
+              <div className="flex flex-wrap gap-2">
+                {getSuggestedQuestions().map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestedQuestion(question)}
+                    className="text-xs bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-full px-3 py-1 transition-colors"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <div className="p-3 border-t border-zinc-800 bg-zinc-900">
