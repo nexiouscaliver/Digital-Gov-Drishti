@@ -1,13 +1,12 @@
 "use client";
 import { useState } from 'react';
-import { FaHeart, FaThumbsDown, FaShare, FaComments, FaPlus } from 'react-icons/fa';
+import { FaHeart, FaThumbsDown, FaShare, FaComments, FaFilter } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import Sparkles from '@/components/user/feed/Sparkles';
 import { CardHoverEffect, HoverCard } from '@/components/user/feed/CardHoverEffect';
-import FloatingActionButton from '@/components/user/feed/FloatingActionButton';
+import ChatBotButton from '@/components/user/chatbot/ChatBotButton';
 
 export default function MyFeedPage() {
   const [crimePosts, setCrimePosts] = useState([
@@ -23,7 +22,8 @@ export default function MyFeedPage() {
       timestamp: '1 hour ago',
       location: 'Central Market',
       witnesses: 3,
-      originalComplaintUrl: '/complaints/1', // Dummy URL
+      originalComplaintUrl: '/complaints/1',
+      category: 'Crime',
     },
     {
       id: 2,
@@ -37,7 +37,8 @@ export default function MyFeedPage() {
       timestamp: '2 hours ago',
       location: 'Sector 5',
       witnesses: 0,
-      originalComplaintUrl: '/complaints/2', // Dummy URL
+      originalComplaintUrl: '/complaints/2',
+      category: 'Utilities',
     },
     {
       id: 3,
@@ -51,7 +52,8 @@ export default function MyFeedPage() {
       timestamp: '3 hours ago',
       location: 'Highway 42',
       witnesses: 5,
-      originalComplaintUrl: '/complaints/3', // Dummy URL
+      originalComplaintUrl: '/complaints/3',
+      category: 'Accident',
     },
     {
       id: 4,
@@ -65,7 +67,8 @@ export default function MyFeedPage() {
       timestamp: '5 hours ago',
       location: 'Oakwood Apartments',
       witnesses: 1,
-      originalComplaintUrl: '/complaints/4', // Dummy URL
+      originalComplaintUrl: '/complaints/4',
+      category: 'Disturbance',
     },
     {
       id: 5,
@@ -79,7 +82,8 @@ export default function MyFeedPage() {
       timestamp: '8 hours ago',
       location: 'Central Park',
       witnesses: 2,
-      originalComplaintUrl: '/complaints/5', // Dummy URL
+      originalComplaintUrl: '/complaints/5',
+      category: 'Crime',
     },
     {
       id: 6,
@@ -93,7 +97,8 @@ export default function MyFeedPage() {
       timestamp: '12 hours ago',
       location: 'Riverbank Area',
       witnesses: 0,
-      originalComplaintUrl: '/complaints/6', // Dummy URL
+      originalComplaintUrl: '/complaints/6',
+      category: 'Environment',
     },
     {
       id: 7,
@@ -107,7 +112,8 @@ export default function MyFeedPage() {
       timestamp: '1 day ago',
       location: 'First National Bank',
       witnesses: 4,
-      originalComplaintUrl: '/complaints/7', // Dummy URL
+      originalComplaintUrl: '/complaints/7',
+      category: 'Crime',
     },
     {
       id: 8,
@@ -121,14 +127,27 @@ export default function MyFeedPage() {
       timestamp: '2 days ago',
       location: 'Town Square',
       witnesses: 0,
-      originalComplaintUrl: '/complaints/8', // Dummy URL
+      originalComplaintUrl: '/complaints/8',
+      category: 'Public Order',
     },
   ]);
 
   const router = useRouter();
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    category: 'all',
+    hasProof: 'all',
+    timeframe: 'all'
+  });
+  const [filteredPosts, setFilteredPosts] = useState(crimePosts);
 
   const handleLike = (id: number) => {
     setCrimePosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === id ? { ...post, likes: post.likes + 1 } : post
+      )
+    );
+    setFilteredPosts(prevPosts =>
       prevPosts.map(post =>
         post.id === id ? { ...post, likes: post.likes + 1 } : post
       )
@@ -141,15 +160,51 @@ export default function MyFeedPage() {
         post.id === id ? { ...post, dislikes: post.dislikes + 1 } : post
       )
     );
+    setFilteredPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === id ? { ...post, dislikes: post.dislikes + 1 } : post
+      )
+    );
   };
 
   const handleCollaborateClick = (id: number) => {
     router.push(`/collaborate/${id}`);
   };
 
-  const handleNewPost = () => {
-    console.log('Creating new post');
-    // Implementation for new post functionality would go here
+  const applyFilters = () => {
+    let filtered = [...crimePosts];
+    
+    // Filter by category
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(post => 
+        post.category.toLowerCase() === filters.category.toLowerCase()
+      );
+    }
+    
+    // Filter by proof status
+    if (filters.hasProof !== 'all') {
+      const hasProof = filters.hasProof === 'yes';
+      filtered = filtered.filter(post => post.hasProof === hasProof);
+    }
+    
+    // Filter by timeframe
+    if (filters.timeframe !== 'all') {
+      filtered = filtered.filter(post => {
+        if (filters.timeframe === 'recent' && post.timestamp.includes('hour')) {
+          return true;
+        } else if (filters.timeframe === 'today' && 
+          (post.timestamp.includes('hour') || post.timestamp === 'Today')) {
+          return true;
+        } else if (filters.timeframe === 'week' && 
+          (!post.timestamp.includes('month') && !post.timestamp.includes('year'))) {
+          return true;
+        }
+        return false;
+      });
+    }
+    
+    setFilteredPosts(filtered);
+    setFilterOpen(false);
   };
 
   return (
@@ -167,14 +222,79 @@ export default function MyFeedPage() {
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition-all cursor-pointer"
+            onClick={() => setFilterOpen(!filterOpen)}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition-all cursor-pointer flex items-center"
           >
-            Filter Posts
+            <FaFilter className="mr-2" /> Filter Posts
           </motion.div>
         </div>
 
+        {filterOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8 bg-zinc-900 p-6 rounded-xl shadow-lg"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                <select 
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-white"
+                  value={filters.category}
+                  onChange={(e) => setFilters({...filters, category: e.target.value})}
+                >
+                  <option value="all">All Categories</option>
+                  <option value="crime">Crime</option>
+                  <option value="utilities">Utilities</option>
+                  <option value="accident">Accident</option>
+                  <option value="disturbance">Disturbance</option>
+                  <option value="environment">Environment</option>
+                  <option value="public order">Public Order</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Proof Status</label>
+                <select 
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-white"
+                  value={filters.hasProof}
+                  onChange={(e) => setFilters({...filters, hasProof: e.target.value})}
+                >
+                  <option value="all">All Posts</option>
+                  <option value="yes">With Proof</option>
+                  <option value="no">Without Proof</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Time Frame</label>
+                <select 
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-md p-2 text-white"
+                  value={filters.timeframe}
+                  onChange={(e) => setFilters({...filters, timeframe: e.target.value})}
+                >
+                  <option value="all">All Time</option>
+                  <option value="recent">Last Few Hours</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end mt-6">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={applyFilters}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-md text-white font-medium"
+              >
+                Apply Filters
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
         <CardHoverEffect>
-          {crimePosts.map((post) => (
+          {filteredPosts.map((post) => (
             <HoverCard key={post.id}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -198,6 +318,11 @@ export default function MyFeedPage() {
                           : 'bg-red-900/80 text-red-200'
                       }`}>
                         {post.hasProof ? 'Proof Available' : 'No Proof'}
+                      </span>
+                    </div>
+                    <div className="absolute top-0 left-0 p-2">
+                      <span className="px-3 py-1 rounded-full text-xs bg-purple-900/80 text-purple-200">
+                        {post.category}
                       </span>
                     </div>
                   </div>
@@ -283,9 +408,7 @@ export default function MyFeedPage() {
           ))}
         </CardHoverEffect>
       </motion.div>
-      <FloatingActionButton onClick={handleNewPost}>
-        <FaPlus size={24} />
-      </FloatingActionButton>
+      <ChatBotButton />
     </div>
   );
 }
