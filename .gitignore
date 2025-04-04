@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+.cursor/rules/editing-files-ruleset.mdc
+/.cursor
+/.cursor
+.cursor/rules/execution-guidelines.mdc
+.cursor/rules/editing-files-ruleset.mdc
